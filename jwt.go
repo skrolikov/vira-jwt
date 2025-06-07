@@ -15,6 +15,14 @@ func GenerateToken(userID string, tokenType string, duration time.Duration, secr
 	return jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(secret))
 }
 
+func GenerateAccessToken(userID, secret string, duration time.Duration) (string, error) {
+	return GenerateToken(userID, "access", duration, secret)
+}
+
+func GenerateRefreshToken(userID, secret string, duration time.Duration) (string, error) {
+	return GenerateToken(userID, "refresh", duration, secret)
+}
+
 func IsTokenType(claims jwt.MapClaims, t string) bool {
 	val, ok := claims["type"].(string)
 	return ok && val == t
@@ -25,9 +33,14 @@ func ParseToken(tokenStr string, secret string) (jwt.MapClaims, error) {
 		return []byte(secret), nil
 	})
 
-	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-		return claims, nil
+	if err != nil || !token.Valid {
+		return nil, err
 	}
 
-	return nil, err
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !ok {
+		return nil, jwt.ErrTokenInvalidClaims
+	}
+
+	return claims, nil
 }
